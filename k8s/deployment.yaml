@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulsechat
+  labels:
+    app: pulsechat
+spec:
+  replicas: 1 # single replica: SQLite lives on one volume
+  strategy:
+    type: Recreate # never two pods on the same SQLite file during a rollout
+  selector:
+    matchLabels:
+      app: pulsechat
+  template:
+    metadata:
+      labels:
+        app: pulsechat
+    spec:
+      # private Amazon ECR repository: pull credential created by the pipeline
+      imagePullSecrets:
+        - name: ecr-pull
+      containers:
+        - name: pulsechat
+          # the Deploy stage resolves <account>.dkr.ecr.<region>.amazonaws.com/pulsechat:<BUILD_NUMBER>
+          image: 123456789012.dkr.ecr.ap-south-1.amazonaws.com/pulsechat:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: APP_VERSION
+              value: "v1.0-BUILD-local"
+            - name: DB_PATH
+              value: "/data/chat.db"
+          livenessProbe:
+            httpGet: { path: /health, port: 5000 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            httpGet: { path: /health, port: 5000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits: { cpu: "500m", memory: "512Mi" }
+          volumeMounts:
+            - name: chatdata
+              mountPath: /data
+      volumes:
+        - name: chatdata
+          persistentVolumeClaim:
+            claimName: pulsechat-data # chat history survives pod restarts and redeploys

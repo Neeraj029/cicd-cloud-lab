@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+chat.db
+/data/
+.venv/
+.pytest_cache/
+venv/
+*.egg-info/
+jenkins.env
+.registry

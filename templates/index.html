@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PulseChat</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="window">
+    <aside class="sidebar">
+      <div class="wordmark"><span class="mark"></span>PulseChat</div>
+
+      <div class="group">
+        <span class="label">Your Name</span>
+        <input id="username" class="field" maxlength="30" placeholder="Set a name" />
+      </div>
+
+      <span class="label section">Rooms</span>
+      <ul id="rooms" class="rooms"></ul>
+
+      <div class="new-room">
+        <input id="newRoom" class="field" maxlength="30" placeholder="new-room" />
+        <button id="joinBtn" class="btn" type="button">Add</button>
+      </div>
+
+      <div class="sidebar-foot">
+        <button id="themeBtn" class="toggle" type="button" role="switch" aria-checked="false">
+          <span class="check"></span><span>Dark Appearance</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="titlebar">
+        <div>
+          <h1 class="title" id="roomTitle">general</h1>
+          <p class="subtitle"><span class="dot" id="dot"></span><span id="statusText">Connecting</span></p>
+        </div>
+        <span class="badge" id="verBadge">{{ app_version }}</span>
+      </header>
+
+      <div id="messages" class="messages"></div>
+
+      <form id="sendForm" class="composer">
+        <input id="text" class="field" maxlength="500" placeholder="Write a message" autocomplete="off" />
+        <button type="submit" class="btn btn-primary">Send</button>
+      </form>
+
+      <footer class="foot">PulseChat {{ app_version }} &middot; Flask &middot; SQLite &middot; Gunicorn</footer>
+    </main>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

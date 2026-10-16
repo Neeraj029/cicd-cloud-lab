@@ -1,0 +1,10 @@
+# Jenkins plugins installed automatically by scripts/setup-ec2.sh
+# docker-workflow pulls in the docker-plugin, credential-binding and git deps.
+git
+workflow-aggregator
+pipeline-stage-view
+pipeline-milestone-step
+credentials
+credentials-binding
+plain-credentials
+github
