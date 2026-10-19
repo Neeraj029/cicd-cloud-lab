@@ -115,9 +115,9 @@ pipeline {
             IMAGE="$REGISTRY/$ECR_REPO"
 
             # private ECR: the nodes need a pull secret to fetch the image
-            aws ecr get-login-password --region "$AWS_REGION" \
-              | kubectl create secret docker-registry ecr-pull \
-                  --docker-server="$REGISTRY" --docker-username=AWS --docker-password-stdin \
+            ECR_PASS=$(aws ecr get-login-password --region "$AWS_REGION")
+            kubectl create secret docker-registry ecr-pull \
+                  --docker-server="$REGISTRY" --docker-username=AWS --docker-password="$ECR_PASS" \
                   --dry-run=client -o yaml | kubectl apply -f -
 
             # keep the manifest in step with what we just pushed
