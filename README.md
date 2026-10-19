@@ -11,8 +11,22 @@ steps, the ECR IAM setup, and the automation scripts in `scripts/`.
 PulseChat: Flask + Gunicorn + SQLite + vanilla JS. No Node build step, single
 container, no external DB — so the pipeline never breaks on AWS. Features:
 multi-room chat, account registration/login, token-based auth for posting,
-timestamps, polling refresh (2.5s), dark mode, emoji tray, `/health` and
+timestamps, polling refresh (2.5s), dark mode, `/health` and
 `/api/version` endpoints.
+
+### UI
+The page has two mutually exclusive views. Signed out, only the sign-in card
+exists — nothing is fetched, and no room, message or poll request is made until
+a session is verified. Signed in, the chat window takes over.
+
+* **Sign in** — segmented Sign in / Create account, labelled fields, password
+  reveal, inline errors (no `alert()`), spinner on submit, staggered entrance.
+* **Chat** — iOS-flavoured system look: grouped list sidebar, blurred chrome,
+  a real dark-mode switch, messages animated in only when genuinely new
+  (the poller diffs by id instead of rebuilding the DOM), grouped consecutive
+  messages, scroll only auto-follows when you are already at the bottom, and a
+  "New messages" pill when you are not. Under 820px the sidebar becomes a
+  drawer. `prefers-reduced-motion` is respected.
 
 ## 2. Run locally
 ```bash

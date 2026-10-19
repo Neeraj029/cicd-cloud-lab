@@ -2,61 +2,128 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f2f2f7" />
   <title>PulseChat</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-  <div class="window">
-    <aside class="sidebar">
-      <div class="wordmark"><span class="mark"></span>PulseChat</div>
 
-      <div class="group">
-        <span class="label">Account</span>
-        <input id="authUser" class="field" maxlength="30" placeholder="username" />
-        <input id="authPass" class="field" type="password" maxlength="128" placeholder="password" style="margin-top:6px;" />
-        <div class="new-room" style="padding:8px 0 0; border-top:0; margin:0;">
-          <button id="registerBtn" class="btn" type="button">Register</button>
-          <button id="loginBtn" class="btn btn-primary" type="button">Login</button>
-          <button id="logoutBtn" class="btn" type="button">Logout</button>
-        </div>
-        <span class="label" id="authStatus" style="margin-top:7px;">Not signed in</span>
-      </div>
-
-      <span class="label section">Rooms</span>
-      <ul id="rooms" class="rooms"></ul>
-
-      <div class="new-room">
-        <input id="newRoom" class="field" maxlength="30" placeholder="new-room" />
-        <button id="joinBtn" class="btn" type="button">Add</button>
-      </div>
-
-      <div class="sidebar-foot">
-        <button id="themeBtn" class="toggle" type="button" role="switch" aria-checked="false">
-          <span class="check"></span><span>Dark Appearance</span>
-        </button>
-      </div>
-    </aside>
-
-    <main class="content">
-      <header class="titlebar">
-        <div>
-          <h1 class="title" id="roomTitle">general</h1>
-          <p class="subtitle"><span class="dot" id="dot"></span><span id="statusText">Connecting</span></p>
-        </div>
-        <span class="badge" id="verBadge">{{ app_version }}</span>
+  <!-- Sign in / register. The only view rendered while signed out. -------->
+  <div id="authView" class="auth">
+    <main class="auth-card">
+      <header class="auth-brand">
+        <span class="mark" aria-hidden="true"></span>
+        <h1 class="auth-title">PulseChat</h1>
+        <p class="auth-sub">Sign in to open the rooms.</p>
       </header>
 
-      <div id="messages" class="messages"></div>
+      <div class="segmented" id="segmented" role="tablist" aria-label="Account">
+        <span class="seg-thumb" aria-hidden="true"></span>
+        <button class="seg" id="segLogin" type="button" role="tab" data-mode="login" aria-selected="true">Sign in</button>
+        <button class="seg" id="segRegister" type="button" role="tab" data-mode="register" aria-selected="false">Create account</button>
+      </div>
 
-      <form id="sendForm" class="composer">
-        <input id="text" class="field" maxlength="500" placeholder="Write a message" autocomplete="off" />
-        <button type="submit" class="btn btn-primary">Send</button>
+      <form id="authForm" class="auth-form" novalidate>
+        <div class="field-group">
+          <label class="field-label" for="authUser">Username</label>
+          <input id="authUser" class="input" name="username" maxlength="30"
+                 autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="authPass">Password</label>
+          <div class="input-wrap">
+            <input id="authPass" class="input" name="password" type="password" maxlength="128"
+                   autocomplete="current-password" required />
+            <button id="revealBtn" class="reveal" type="button" aria-label="Show password" aria-pressed="false">Show</button>
+          </div>
+        </div>
+
+        <p id="authError" class="auth-error" role="alert" hidden></p>
+
+        <button id="authSubmit" class="btn-primary" type="submit">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Sign in</span>
+        </button>
       </form>
 
-      <footer class="foot">PulseChat {{ app_version }} &middot; Flask &middot; SQLite &middot; Gunicorn</footer>
+      <p class="auth-hint" id="authHint">Username: 3&ndash;30 characters &mdash; letters, numbers, <code>_</code>, <code>.</code>, <code>-</code></p>
     </main>
+
+    <p class="auth-foot">PulseChat {{ app_version }}</p>
   </div>
+
+  <!-- Chat. Stays hidden and inert until the session is verified. --------->
+  <div id="appView" class="app" hidden>
+    <div class="scrim" id="scrim" hidden></div>
+
+    <div class="window" id="window">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-head">
+          <div class="wordmark"><span class="mark" aria-hidden="true"></span>PulseChat</div>
+          <button id="drawerClose" class="btn-icon drawer-close" type="button" aria-label="Close menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+
+        <span class="label">Rooms</span>
+        <ul id="rooms" class="rooms" role="list"></ul>
+
+        <form id="newRoomForm" class="new-room" autocomplete="off">
+          <input id="newRoom" class="input input-sm" maxlength="30" placeholder="New room" aria-label="New room name" />
+          <button id="joinBtn" class="btn-icon" type="submit" aria-label="Add room">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </form>
+
+        <div class="sidebar-foot">
+          <div class="account">
+            <span class="avatar" id="avatar" aria-hidden="true"></span>
+            <span class="account-name" id="accountName"></span>
+            <button id="logoutBtn" class="btn-ghost" type="button">Sign out</button>
+          </div>
+
+          <button id="themeBtn" class="switch" type="button" role="switch" aria-checked="false">
+            <span class="track" aria-hidden="true"><span class="knob"></span></span>
+            <span class="switch-label">Dark Appearance</span>
+          </button>
+        </div>
+      </aside>
+
+      <main class="content">
+        <header class="titlebar">
+          <button id="menuBtn" class="btn-icon menu" type="button" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          </button>
+          <div class="title-meta">
+            <h1 class="title" id="roomTitle">general</h1>
+            <p class="subtitle"><span class="dot" id="dot"></span><span id="statusText">Connecting</span></p>
+          </div>
+          <span class="badge" id="verBadge">{{ app_version }}</span>
+        </header>
+
+        <div id="messages" class="messages" role="log" aria-label="Messages"></div>
+
+        <button id="jumpBtn" class="jump" type="button" hidden>New messages</button>
+
+        <form id="sendForm" class="composer" autocomplete="off">
+          <input id="text" class="input input-composer" maxlength="500" placeholder="Write a message"
+                 aria-label="Write a message" />
+          <span id="charCount" class="char-count" aria-hidden="true"></span>
+          <button id="sendBtn" class="send" type="submit" aria-label="Send message">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6M6 11l6-6 6 6"/></svg>
+          </button>
+        </form>
+
+        <footer class="foot">PulseChat {{ app_version }} &middot; Flask &middot; SQLite &middot; Gunicorn</footer>
+      </main>
+    </div>
+  </div>
+
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+
   <script src="/static/app.js"></script>
 </body>
 </html>
