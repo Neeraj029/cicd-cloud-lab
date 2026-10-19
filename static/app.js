@@ -1,7 +1,5 @@
 const $ = (id) => document.getElementById(id);
-const state = { room: "general" };
-
-const myName = () => ($("username").value.trim() || "guest");
+const state = { room: "general", token: "", user: null };
 
 function setStatus(online) {
   $("dot").className = online ? "dot" : "dot off";
@@ -18,6 +16,70 @@ function fmtTime(iso) {
 
 function plural(n) {
   return n + " message" + (n === 1 ? "" : "s");
+}
+
+function authHeaders() {
+  return state.token ? { Authorization: "Bearer " + state.token } : {};
+}
+
+function setAuthStatus(message) {
+  $("authStatus").textContent = message;
+}
+
+function persistSession() {
+  if (state.token && state.user) {
+    localStorage.setItem("pulsechat-token", state.token);
+    localStorage.setItem("pulsechat-user", state.user.username);
+  } else {
+    localStorage.removeItem("pulsechat-token");
+    localStorage.removeItem("pulsechat-user");
+  }
+}
+
+function setSession(token, user) {
+  state.token = token || "";
+  state.user = user || null;
+  persistSession();
+  $("authUser").value = state.user ? state.user.username : "";
+  $("text").disabled = !state.user;
+  $("sendForm").querySelector("button[type='submit']").disabled = !state.user;
+  setAuthStatus(state.user ? `Signed in as ${state.user.username}` : "Not signed in");
+}
+
+async function fetchMe() {
+  if (!state.token) return false;
+  try {
+    const res = await fetch("/api/auth/me", { headers: authHeaders() });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    setSession(state.token, data.user);
+    return true;
+  } catch {
+    setSession("", null);
+    return false;
+  }
+}
+
+async function authAction(path) {
+  const username = $("authUser").value.trim();
+  const password = $("authPass").value;
+  if (!username || !password) {
+    window.alert("Enter username and password.");
+    return false;
+  }
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    window.alert(data.error || "Authentication failed.");
+    return false;
+  }
+  setSession(data.token, data.user);
+  $("authPass").value = "";
+  return true;
 }
 
 async function loadVersion() {
@@ -64,7 +126,7 @@ function render(messages) {
     box.appendChild(empty);
     return;
   }
-  const me = myName().toLowerCase();
+  const me = state.user ? state.user.username.toLowerCase() : "";
   messages.forEach((msg) => {
     const card = document.createElement("div");
     card.className = msg.username.toLowerCase() === me ? "msg own" : "msg";
@@ -103,13 +165,18 @@ async function loadMessages() {
 }
 
 async function send(text) {
+  if (!state.token) {
+    window.alert("Login required.");
+    return false;
+  }
   const res = await fetch("/api/messages", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: myName(), room: state.room, text }),
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ room: state.room, text }),
   });
   if (!res.ok) {
     const err = await res.json();
+    if (res.status === 401) setSession("", null);
     window.alert(err.error || "Message could not be sent.");
   }
   return res.ok;
@@ -143,10 +210,20 @@ $("joinBtn").onclick = () => {
   loadMessages();
 };
 
-$("username").addEventListener("change", () => {
-  localStorage.setItem("pulsechat-name", myName());
-  loadMessages();
-});
+$("registerBtn").onclick = async () => {
+  if (await authAction("/api/auth/register")) loadMessages();
+};
+
+$("loginBtn").onclick = async () => {
+  if (await authAction("/api/auth/login")) loadMessages();
+};
+
+$("logoutBtn").onclick = async () => {
+  if (state.token) {
+    await fetch("/api/auth/logout", { method: "POST", headers: authHeaders() });
+  }
+  setSession("", null);
+};
 
 function applyTheme(dark) {
   document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
@@ -158,10 +235,16 @@ $("themeBtn").onclick = () => {
   applyTheme(document.documentElement.getAttribute("data-theme") !== "dark");
 };
 
-$("username").value = localStorage.getItem("pulsechat-name") || "";
 applyTheme(localStorage.getItem("pulsechat-dark") === "1");
+state.token = localStorage.getItem("pulsechat-token") || "";
+const savedUser = localStorage.getItem("pulsechat-user");
+if (state.token && savedUser) {
+  state.user = { username: savedUser };
+  $("authUser").value = savedUser;
+}
+setSession(state.token, state.user);
 
 loadVersion();
 loadRooms();
-loadMessages();
+fetchMe().then(loadMessages);
 setInterval(loadMessages, 2500);
