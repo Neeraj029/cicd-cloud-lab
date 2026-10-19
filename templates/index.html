@@ -12,8 +12,15 @@
       <div class="wordmark"><span class="mark"></span>PulseChat</div>
 
       <div class="group">
-        <span class="label">Your Name</span>
-        <input id="username" class="field" maxlength="30" placeholder="Set a name" />
+        <span class="label">Account</span>
+        <input id="authUser" class="field" maxlength="30" placeholder="username" />
+        <input id="authPass" class="field" type="password" maxlength="128" placeholder="password" style="margin-top:6px;" />
+        <div class="new-room" style="padding:8px 0 0; border-top:0; margin:0;">
+          <button id="registerBtn" class="btn" type="button">Register</button>
+          <button id="loginBtn" class="btn btn-primary" type="button">Login</button>
+          <button id="logoutBtn" class="btn" type="button">Logout</button>
+        </div>
+        <span class="label" id="authStatus" style="margin-top:7px;">Not signed in</span>
       </div>
 
       <span class="label section">Rooms</span>

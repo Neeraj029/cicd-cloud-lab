@@ -10,15 +10,18 @@ steps, the ECR IAM setup, and the automation scripts in `scripts/`.
 ## 1. Project chosen
 PulseChat: Flask + Gunicorn + SQLite + vanilla JS. No Node build step, single
 container, no external DB — so the pipeline never breaks on AWS. Features:
-multi-room chat, usernames, timestamps, polling refresh (2.5s), dark mode,
-emoji tray, `/health` and `/api/version` endpoints.
+multi-room chat, account registration/login, token-based auth for posting,
+timestamps, polling refresh (2.5s), dark mode, emoji tray, `/health` and
+`/api/version` endpoints.
 
 ## 2. Run locally
 ```bash
 pip install -r requirements.txt
 python app.py            # http://localhost:5000
-pytest -q                # 6 tests
+pytest -q                # 7 tests
 ```
+
+Create an account from the sidebar (register/login) before sending messages.
 
 ### Fonts
 UI is **Inter** (variable, 48 KB, bundled in `static/fonts/`) — the standard
