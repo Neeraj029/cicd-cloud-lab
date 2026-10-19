@@ -78,7 +78,7 @@ pipeline {
           set -e
           REGISTRY=$(cat .registry)
           docker version --format 'server {{.Server.Version}}'
-          docker build -t "$REGISTRY/$ECR_REPO:${BUILD_NUMBER}" -t "$REGISTRY/$ECR_REPO:latest" .
+          docker build --provenance=false --sbom=false -t "$REGISTRY/$ECR_REPO:${BUILD_NUMBER}" -t "$REGISTRY/$ECR_REPO:latest" .
           docker images "$REGISTRY/$ECR_REPO"
         '''
       }
@@ -98,7 +98,7 @@ pipeline {
             docker push "$REGISTRY/$ECR_REPO:latest"
             echo "pushed - latest image now in ECR:"
             aws ecr describe-images --region "$AWS_REGION" --repository-name "$ECR_REPO" \
-              --query 'sort_by(imageDetails,&pushTimestamp)[-1].[imageTag,pushTimestamp]' --output text
+              --query 'sort_by(imageDetails,&imagePushedAt)[-3:].[imageTags[0],imagePushedAt]' --output text
           '''
         }
       }
@@ -143,7 +143,7 @@ pipeline {
   post {
     always {
       // keep the small free-tier disk from filling up
-      sh 'docker image prune -f || true; docker builder prune -f --keep-storage 2GB || true'
+      sh 'docker image prune -f || true; docker builder prune -f --reserved-space 2GB || true'
     }
     success {
       echo "SUCCESS: $ECR_REPO:${BUILD_NUMBER} is live on Minikube."
